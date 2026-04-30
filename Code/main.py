@@ -33,7 +33,13 @@ def weigh_matrices(matrices: dict[str, np.ndarray], weights: dict[str, float]) -
     names = [n for n in weights if n in matrices]
 
     w = np.array([weights[n] for n in names], dtype=np.float64)
-    w = w / w.sum()
+
+    if w.sum() != 1:
+        return np.array([
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1]
+        ])
 
     mats = np.stack([matrices[n] for n in names], axis=0)   # (K, 3, 3)
     weighted_m = np.tensordot(w, mats, axes=([0], [0]))        # (3, 3)
@@ -121,7 +127,7 @@ def find_optimal_filter() -> tuple:
 
 
 if __name__ == "__main__":
-    display_filters(((0.6, 0.3, 0.1), (0.2, 0.7, 0.1), (0.3, 0.3, 0.4)))
+    display_filters(((0.6, 0.3, 0.1), (0.0, 0.0, 0.0), (0.3, 0.3, 0.4)))
 
     # outputDir = '../Outputs/'
     # os.makedirs(outputDir, exist_ok=True)
