@@ -25,6 +25,16 @@ DALTONIZATION_MATRICES = {
     ])
 }
 
+def weigh_matrices(matrices: dict[str, np.ndarray], weights: dict[str, float]) -> np.ndarray:
+    names = [n for n in weights if n in matrices]
+
+    w = np.array([weights[n] for n in names], dtype=np.float64)
+    w = w / w.sum()
+
+    mats = np.stack([matrices[n] for n in names], axis=0)   # (K, 3, 3)
+    weighted_m = np.tensordot(w, mats, axes=([0], [0]))        # (3, 3)
+    return weighted_m
+
 def apply_transform(image, matrix):
     # apply per-pixel transform: result[x,y,:] = kernel @ image[x,y,:]
     out = np.tensordot(image, matrix.T, axes=([2], [0]))  #HxWx3
@@ -44,12 +54,27 @@ if __name__ == "__main__":
     image = cv2.imread(args.image_path)
 
     #select matrix to apply
+    # matrix_name = "protanopia"
+    # matrix_name = "deuteranopia"
     matrix_name = "tritanopia"
-    applied_matrix = DALTONIZATION_MATRICES[matrix_name]
+
+    weights = {
+        "protanopia": 0.6,
+        "deuteranopia": 0.3,
+        "tritanopia": 0.1,
+    }
+
+    applied_matrix = weigh_matrices(DALTONIZATION_MATRICES, weights)
 
     #BGR to RGB
     image_rgb = image[:, :, ::-1]
 
     transformed_image = apply_transform(image_rgb, applied_matrix)
 
-    plt.imsave(os.path.join(outputDir, f"{matrix_name}_image.png"), transformed_image)
+    #save image
+    p_weight = weights.get("protanopia", 0.0)
+    d_weight = weights.get("deuteranopia", 0.0)
+    t_weight = weights.get("tritanopia", 0.0)
+    weight_tag = f"{p_weight}_{d_weight}_{t_weight}"
+    input_name = os.path.splitext(os.path.basename(args.image_path))[0]
+    plt.imsave(os.path.join(outputDir, f"{weight_tag}_{input_name}.png"), transformed_image)
