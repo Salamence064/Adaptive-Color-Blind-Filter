@@ -1,3 +1,3 @@
-## Collaborators
+## Contributors
  * Thomas Ducote
  * Casey Ear
