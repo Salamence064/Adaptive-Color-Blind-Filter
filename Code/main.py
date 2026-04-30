@@ -8,17 +8,17 @@ import argparse
 #define daltonization transform matrices
 #matrices based on: https://github.com/joergdietrich/daltonize/blob/main/daltonize/daltonize.py
 DALTONIZATION_MATRICES = {
-    "protanopia": np.array([
+    "protanopia": np.array([ #missing red
         [0, 0.90822864, 0.008192],
         [0, 1, 0],
         [0, 0, 1]
     ]),
-    "deuteranopia": np.array([
+    "deuteranopia": np.array([ #missing green
         [1, 0, 0], 
         [1.10104433,  0, -0.00901975], 
         [0, 0, 1]
     ]),
-    "tritanopia": np.array([
+    "tritanopia": np.array([ #missing blue
         [1, 0, 0],
         [0, 1, 0],
         [-0.15773032,  1.19465634, 0]
