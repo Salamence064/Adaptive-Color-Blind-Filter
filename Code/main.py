@@ -191,6 +191,7 @@ def find_optimal_filter() -> tuple:
             filter1 = (1.0, 0.0, 0.0)
             filter2 = (0.0, 1.0, 0.0)
             filter3 = (0.0, 0.0, 1.0)
+            continue
 
         while selected_img != '1' and selected_img != '2' and selected_img != '3' and selected_img != '4':
             selected_img = input("Which image do you like most? Enter a number from 1-4: ")
