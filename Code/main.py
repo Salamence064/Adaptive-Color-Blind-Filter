@@ -53,17 +53,40 @@ def apply_transform(image, matrix):
     return out
 
 
-# Generate two new filters for the user based on the weights of the selected one
+def normalize(w: tuple) -> tuple:
+    arr = []
+
+    for i in w: arr.append(i / sum(w))
+    res: tuple = tuple(arr)
+
+    return res
+
+def average(n1, n2):
+    return (n1 + n2) / 2.0
+
+
+# Generate two new filters for the user
+# Takes in a tuple with the original and selected filters ((old_r, old_g, old_b), (sel_r, sel_g, sel_b))
+# If old = new, pass in the other two filters as parameters, too
 # Outputs a tuple of tuples with the weights for the two new filters ((r, g, b), (r, g, b)) 
-def apply_new_filters(r: float, g: float, b: float) -> tuple:
-    # Play around with varying degrees of the main weakness + the other two
-    # We could make use of binary search in some way here
-    return ()
+def apply_new_filters(weights: tuple) -> tuple:
+    new = weights[1]
+
+    f1 = weights[2]
+    f2 = weights[3]
+    f3 = weights[4]
+
+    f1_avg = (average(f1[0], new[0]), average(f1[1], new[1]), average(f1[2], new[2]))
+    f2_avg = (average(f2[0], new[0]), average(f2[1], new[1]), average(f2[2], new[2]))
+    f3_avg = (average(f3[0], new[0]), average(f3[1], new[1]), average(f3[2], new[2]))
+
+    return (normalize(f1_avg), normalize(f2_avg), normalize(f3_avg))
 
 
 # Display three images each with a different filter applied for the user to choose between
 # This takes the weights in for the two filters applied and for the original ((r, g, b), (r, g, b), (r, g, b))
-def display_filters(weights: tuple) -> None:
+# Returns the figure ID
+def display_filters(weights: tuple):
     # format the weights appropriately
     w1 = {
         "protanopia": weights[0][0],
@@ -83,19 +106,27 @@ def display_filters(weights: tuple) -> None:
         "tritanopia": weights[2][2],
     }
 
+    w4 = {
+        "protanopia": weights[3][0],
+        "deuteranopia": weights[3][1],
+        "tritanopia": weights[3][2],
+    }
+
 
     mat1 = weigh_matrices(DALTONIZATION_MATRICES, w1)
     mat2 = weigh_matrices(DALTONIZATION_MATRICES, w2)
     mat3 = weigh_matrices(DALTONIZATION_MATRICES, w3)
+    mat4 = weigh_matrices(DALTONIZATION_MATRICES, w4)
 
     im1 = apply_transform(GRADIENT_IMAGE_RGB, mat1)
     im2 = apply_transform(GRADIENT_IMAGE_RGB, mat2)
     im3 = apply_transform(GRADIENT_IMAGE_RGB, mat3)
+    im4 = apply_transform(GRADIENT_IMAGE_RGB, mat4)
 
-    ims = [im1, im2, im3]
+    ims = [im1, im2, im3, im4]
 
    
-    fig, axes = plt.subplots(1, 3, figsize=(9, 3))
+    fig, axes = plt.subplots(1, 4, figsize=(12, 4))
 
     for i, (ax, img) in enumerate(zip(axes, ims), start=1):
         ax.imshow(img)
@@ -109,25 +140,63 @@ def display_filters(weights: tuple) -> None:
 
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.4)
-    plt.show()
+    plt.show(block=False)
+
+    return fig.number
 
 
 # Loops until the user is satisfied with the filter
 # Outputs a tuple
 def find_optimal_filter() -> tuple:
-    # Start out with no filter applied and a fully green weak filter applied
-    # display_filters(NONE, GREEN-WEAK)
-    # If NONE: display_filters(RED-WEAK, BLUE-WEAK)
-    # while loop to keep it going
-    # apply_new_filters(STORED-WEIGHTS)
-    # display_filters(NEW_WEIGHTS)
-    # If we reach the quit condition (maybe user says previous one was better 3 times in a row or something like that):
-    #     Break out of the loop and print the final weights and output the final image of the best filter
-    return ()
+    curr_filter: tuple = (0.0, 0.0, 0.0)
+    filter1: tuple = (1.0, 0.0, 0.0)
+    filter2: tuple = (0.0, 1.0, 0.0)
+    filter3: tuple = (0.0, 0.0, 1.0)
+
+    while True:
+        fig_id = display_filters((curr_filter, filter1, filter2, filter3))
+
+        selected_img = input("Which image do you like most (1-4)? ")
+        if selected_img == 'quit' or selected_img == 'q':
+            print("Quitting program...")
+            break
+
+        elif selected_img == 'restart' or selected_img == 'r':
+            print("Restarting...")
+            curr_filter = (0.0, 0.0, 0.0)
+            filter1 = (1.0, 0.0, 0.0)
+            filter2 = (0.0, 1.0, 0.0)
+            filter3 = (0.0, 0.0, 1.0)
+
+        while selected_img != '1' and selected_img != '2' and selected_img != '3' and selected_img != '4':
+            selected_img = input("Which image do you like most? Enter a number from 1-4: ")
+            if selected_img == 'quit' or selected_img == 'q':
+                print("Quitting program...")
+                return curr_filter
+
+            elif selected_img == 'restart' or selected_img == 'r':
+                print("Restarting...")
+                curr_filter = (0.0, 0.0, 0.0)
+                filter1 = (1.0, 0.0, 0.0)
+                filter2 = (0.0, 1.0, 0.0)
+                filter3 = (0.0, 0.0, 1.0)
+        
+        og_filter = curr_filter
+
+        if selected_img == '2': curr_filter = filter1
+        elif selected_img == '3': curr_filter = filter2
+        elif selected_img == '4': curr_filter = filter3
+        
+        if plt.fignum_exists(fig_id): plt.show()
+        
+        filter1, filter2, filter3 = apply_new_filters((og_filter, curr_filter, filter1, filter2, filter3))
+
+    return curr_filter
 
 
 if __name__ == "__main__":
-    display_filters(((0.6, 0.3, 0.1), (0.0, 0.0, 0.0), (0.3, 0.3, 0.4)))
+    final_filter = find_optimal_filter()
+    print(final_filter)
 
     # outputDir = '../Outputs/'
     # os.makedirs(outputDir, exist_ok=True)
